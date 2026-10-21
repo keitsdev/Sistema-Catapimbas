@@ -1,0 +1,10 @@
+{
+  "description": "This web application facilitates the announcement of winning teams by displaying a celebratory song, enhancing engagement during events.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
