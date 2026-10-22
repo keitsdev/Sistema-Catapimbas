@@ -1,4 +1,27 @@
-# Banca Viva – Frontend (React + TypeScript + Vite)
+# Sistema Catapimbas
+
+Frontend React + TypesScript + Vite e Backend Node.js + TypeScript para uma plataforma SaaS multi-institucional de gestão e avaliação de projetos acadêmicos. O frontend e o esquema físico do Supabase podem evoluir separadamente desde que respeitem o contrato em `docs/supabase-contract.md`.
+
+## Funcionalidades implementadas
+
+- cadastro, login, recuperação de senha e validação de JWT do Supabase Auth;
+- instituições, solicitações de ingresso, aprovação, bloqueio e revogação de vínculos;
+- autorização por instituição e papel em todas as rotas protegidas;
+- projetos, equipes, orientadores, bancas, avaliadores, critérios e rubricas;
+- submissão e revisão transacional de avaliações;
+- auditoria de operações sensíveis;
+- ranking ponderado com empates explícitos;
+- pódio com configuração de confete e música da equipe vencedora;
+- dashboard institucional;
+- exportação de projetos e ranking para `.xlsx`;
+- validação Zod, rate limiting, CORS, Helmet, logs com campos sensíveis ocultos e Swagger.
+
+## Requisitos
+
+- Node.js 22;
+- pnpm 10;
+- projeto Supabase com Auth habilitado;
+- tabelas e funções descritas em `docs/supabase-contract.md`.
 
 ## Rodar
 ```bash
