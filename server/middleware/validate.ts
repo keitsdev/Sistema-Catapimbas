@@ -8,7 +8,7 @@ export function validate(schema: {
 }): RequestHandler {
   return (req, _res, next) => {
     if (schema.body) req.body = schema.body.parse(req.body);
-    if (schema.query) req.query = schema.query.parse(req.query) as typeof req.query;
+    if (schema.query) Object.defineProperty(req, "query", { value: schema.query.parse(req.query), writable: true, configurable: true, enumerable: true });
     if (schema.params) req.params = schema.params.parse(req.params) as typeof req.params;
     next();
   };

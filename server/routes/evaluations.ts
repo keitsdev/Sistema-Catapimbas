@@ -6,14 +6,12 @@ import { registrarAuditoria } from '../services/audit';
 
 const router = Router();
 
-// Lançar avaliação (RF09, RN03, RN04)
 router.post('/', requireAuth, requireRole(['avaliador', 'admin']), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { banca_id, projeto_id, notas } = req.body; // notas = [{ criterio_id, nota }]
+    const { banca_id, projeto_id, notas } = req.body;
     const usuarioId = req.user!.id;
     const instituicaoId = req.user!.institution_id!;
 
-    // RN04: Verificar se o avaliador está designado na banca
     const { data: designacao } = await supabase
       .from('banca_avaliadores')
       .select('id')
@@ -25,7 +23,6 @@ router.post('/', requireAuth, requireRole(['avaliador', 'admin']), async (req: R
       throw new HttpError(403, 'Você não está designado como avaliador nesta banca.');
     }
 
-    // RN03: Impedir avaliação duplicada ativa
     const { data: existente } = await supabase
       .from('avaliacoes')
       .select('id')
@@ -38,7 +35,6 @@ router.post('/', requireAuth, requireRole(['avaliador', 'admin']), async (req: R
       throw new HttpError(400, 'Submissão duplicada: Você já enviou uma avaliação ativa para este projeto nesta banca.');
     }
 
-    // Inserção em lote das notas por critério
     const inserts = notas.map((item: { criterio_id: string; nota: number }) => ({
       banca_id,
       projeto_id,
@@ -52,7 +48,6 @@ router.post('/', requireAuth, requireRole(['avaliador', 'admin']), async (req: R
     const { data: result, error } = await supabase.from('avaliacoes').insert(inserts).select();
     if (error) throw error;
 
-    // Registrar no Log de Auditoria (RF15)
     await registrarAuditoria({
       ator_id: usuarioId,
       operacao: 'SUBMISAO_AVALIACAO',
@@ -68,3 +63,4 @@ router.post('/', requireAuth, requireRole(['avaliador', 'admin']), async (req: R
 });
 
 export default router;
+export { evaluationsRouter } from "./evaluations.contract.js";

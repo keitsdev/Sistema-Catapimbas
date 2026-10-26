@@ -41,3 +41,5 @@ Esconder menus **não** é segurança. O backend deve validar autenticação, pa
 
 ## Ainda a implementar (funcionalidades principais ou mais telas)
 Formulários de criação/edição (projetos, equipes, bancas, critérios e descritores), cadastro/recuperação de senha, bloqueio/revogação de permissões, trilha de auditoria (RF15) e testes automatizados (Vitest + Testing Library; Playwright para acesso entre instituições).
+
+> **Complemento por perfil (CRUD, restrições de acesso, auditoria, testes):** veja `docs/IMPLEMENTACAO.md`.

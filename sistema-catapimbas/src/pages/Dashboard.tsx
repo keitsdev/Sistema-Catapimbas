@@ -5,13 +5,16 @@ import { useAuth } from '../auth'
 
 type D = Awaited<ReturnType<typeof dashboard>>
 export default function Dashboard() {
-  const { ctx } = useAuth(); const [d, setD] = useState<D>()
-  useEffect(() => { dashboard(ctx!).then(setD) }, [ctx])
+  const { ctx } = useAuth(); const [d, setD] = useState<D>(); const [ano, setAno] = useState(0); const [sem, setSem] = useState(0); const [erro, setErro] = useState('')
+  useEffect(() => { setErro(''); dashboard(ctx!, { ano: ano || undefined, semestre: sem || undefined }).then(setD).catch(e => setErro((e as Error).message)) }, [ctx, ano, sem])
+  if (erro) return <p role="alert" className="erro">{erro}</p>
   if (!d) return <p>Carregando…</p>
-  const kpi: [string, number | string][] = [['Projetos', d.projetos], ['Bancas', d.bancas], ['Avaliações concluídas', `${d.feitas} de ${d.esperadas}`]]
+  const kpi: [string, number | string][] = [['Projetos', d.projetos], ['Bancas', d.bancas], ['Avaliações concluídas', `${d.feitas} de ${d.esperadas}`], ...(ctx!.papel === 'admin' ? [['Cadastros pendentes', d.pendencias] as [string, number]] : [])]
   return (
     <>
       <h1>Painel</h1>
+      <div className="filtros"><label>Ano<select value={ano} onChange={e => setAno(+e.target.value)}><option value={0}>Todos</option><option>2025</option><option>2026</option></select></label>
+        <label>Semestre<select value={sem} onChange={e => setSem(+e.target.value)}><option value={0}>Todos</option><option value={1}>1º</option><option value={2}>2º</option></select></label></div>
       <div className="kpis">{kpi.map(([l, v]) => <div className="kpi" key={l}><b>{v}</b><span>{l}</span></div>)}</div>
       {d.projetos === 0 ? <p className="vazio">Nenhum projeto ainda. Cadastre o primeiro em Projetos.</p> : (
         <div className="grid2">

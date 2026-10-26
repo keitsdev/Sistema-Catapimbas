@@ -1,6 +1,6 @@
 import type { ErrorRequestHandler, RequestHandler } from "express";
 import { ZodError } from "zod";
-import { HttpError } from "../../src/lib/http-error"; // Removida a extensão .ts
+import { HttpError } from "../../src/lib/http-error";
 
 export const notFound: RequestHandler = (req, _res, next) => {
   next(new HttpError(404, "NOT_FOUND", `Rota não encontrada: ${req.method} ${req.path}`));

@@ -73,7 +73,7 @@ analyticsRouter.get(
 );
 
 analyticsRouter.get("/reports/projects.xlsx", async (req, res) => {
-  const buffer = await exportProjects(req.auth!.institutionId!, req.query);
+  const buffer = await exportProjects(req.auth!.institutionId!, req.query, req.auth!);
   res
     .status(200)
     .set({
@@ -87,7 +87,7 @@ analyticsRouter.get(
   "/reports/boards/:id/ranking.xlsx",
   validate({ params: z.object({ id: z.string().uuid() }) }),
   async (req, res) => {
-    const buffer = await exportRanking(req.auth!.institutionId!, String(req.params.id));
+    const buffer = await exportRanking(req.auth!.institutionId!, String(req.params.id), req.auth!);
     res
       .status(200)
       .set({

@@ -15,6 +15,13 @@ import { evaluationsRouter } from "./routes/evaluations.js";
 import { institutionsRouter } from "./routes/institutions.js";
 import { membersRouter } from "./routes/members.js";
 import { projectsRouter } from "./routes/projects.js";
+import { auditRouter } from "./routes/audit-logs.js";
+import { boardsExtraRouter } from "./routes/boards-extra.js";
+import { directoryRouter } from "./routes/directory.js";
+import { platformRouter } from "./routes/platform.js";
+import { projectsExtraRouter } from "./routes/projects-extra.js";
+import { publicRouter } from "./routes/public.js";
+import { sessionRouter } from "./routes/session.js";
 
 export function createApp() {
   const env = getEnv();
@@ -52,11 +59,18 @@ export function createApp() {
     res.json({ status: "ok", timestamp: new Date().toISOString() }),
   );
   api.use("/docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
+  api.use("/public", publicRouter);
   api.use("/auth", authRouter);
+  api.use("/auth", sessionRouter);
   api.use("/institutions", institutionsRouter);
   api.use("/members", membersRouter);
   api.use("/projects", projectsRouter);
+  api.use("/projects", projectsExtraRouter);
   api.use("/boards", boardsRouter);
+  api.use("/boards", boardsExtraRouter);
+  api.use("/directory", directoryRouter);
+  api.use("/platform", platformRouter);
+  api.use("/audit-logs", auditRouter);
   api.use("/evaluations", evaluationsRouter);
   api.use(analyticsRouter);
 

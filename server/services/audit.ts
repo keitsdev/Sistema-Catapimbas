@@ -22,3 +22,5 @@ export async function registrarAuditoria(payload: AuditLogPayload): Promise<void
     console.error('Falha ao gravar log de auditoria:', err);
   }
 }
+
+export { audit } from "./audit.contract.js";

@@ -3,7 +3,6 @@ import { supabase } from '../../src/lib/supabase';
 import { HttpError } from '../../src//lib/http-error';
 
 export async function gerarExcelResultados(bancaId: string, institutionId: string): Promise<Buffer> {
-  // Garantir escopo multi-tenant
   const { data: banca } = await supabase
     .from('bancas')
     .select('nome, instituicao_id')
@@ -51,7 +50,6 @@ export async function gerarExcelResultados(bancaId: string, institutionId: strin
     });
   });
 
-  // Estilização do cabeçalho
   worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } };
   worksheet.getRow(1).fill = {
     type: 'pattern',
@@ -62,3 +60,5 @@ export async function gerarExcelResultados(bancaId: string, institutionId: strin
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);
 }
+
+export { exportProjects, exportRanking } from "./export.contract.js";

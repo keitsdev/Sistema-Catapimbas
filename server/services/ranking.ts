@@ -10,7 +10,6 @@ export interface RankingResult {
 }
 
 export async function calcularRankingBanca(bancaId: string, institutionId: string): Promise<RankingResult[]> {
-  // Validar se a banca pertence à instituição do usuário (RN01, RN10)
   const { data: banca, error: bancaErr } = await supabase
     .from('bancas')
     .select('id, instituicao_id, status, publicar_resultados')
@@ -21,7 +20,6 @@ export async function calcularRankingBanca(bancaId: string, institutionId: strin
     throw new HttpError(404, 'Banca não encontrada ou acesso negado.');
   }
 
-  // Buscar projetos, avaliações e critérios
   const { data: avaliacoes, error: evalErr } = await supabase
     .from('avaliacoes')
     .select(`
@@ -37,7 +35,6 @@ export async function calcularRankingBanca(bancaId: string, institutionId: strin
 
   if (evalErr) throw evalErr;
 
-  // Agrupamento por projeto
   const mapaProjetos: Record<string, { nome: string; somaPontos: number; somaPesos: number; qtd: number }> = {};
 
   avaliacoes?.forEach((av: any) => {
@@ -66,12 +63,11 @@ export async function calcularRankingBanca(bancaId: string, institutionId: strin
     };
   });
 
-  // Ordenação por nota e aplicação da política de desempate
   listaRanking.sort((a, b) => {
     if (b.media_final !== a.media_final) {
       return b.media_final - a.media_final;
     }
-    return b.total_avaliacoes - a.total_avaliacoes; // Critério secundário: maior volume de avaliações
+    return b.total_avaliacoes - a.total_avaliacoes;
   });
 
   return listaRanking.map((item, index) => ({
@@ -79,3 +75,5 @@ export async function calcularRankingBanca(bancaId: string, institutionId: strin
     ...item
   }));
 }
+
+export { calculateRanking } from "./ranking.contract.js";

@@ -13,6 +13,7 @@ logs/
 *.log
 .claude-replay.*
 .tmp-*
+README2.md
 
 # Platform-managed agentplat state, not project source. In the
 # client-initiated single-repo workspace layout (make's `Path: "."` spec) the

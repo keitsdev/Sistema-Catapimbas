@@ -1,0 +1,19 @@
+.abas{display:flex;flex-wrap:wrap;gap:.25rem;border-bottom:2px solid var(--line);margin:0 0 1rem}
+.aba{background:transparent;color:var(--muted);border-radius:8px 8px 0 0;padding:.55rem .9rem}.aba:hover{background:#e4eef0;color:var(--ink)}.aba.on{background:#fff;color:var(--teal-d);box-shadow:inset 0 -3px 0 var(--teal)}
+.tag.aprovado,.tag.valida,.tag.enviada,.tag.publicada,.tag.aberta{background:#d6efe3}.tag.pendente,.tag.rascunho,.tag.encerrada{background:#fdeec8}.tag.bloqueado,.tag.revogado,.tag.recusado,.tag.invalidada,.tag.arquivado{background:#f6dcd9}
+button.perigo{background:var(--coral)}button.perigo:hover{background:#a6372f}button.pequeno{padding:.3rem .7rem;font-size:.85rem}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1rem}.form-grid .largo{grid-column:1/-1}
+textarea{font:inherit;padding:.55rem .7rem;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);resize:vertical;min-height:4.5rem}
+.linha-acoes{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}.td-acoes{white-space:nowrap}
+.cab{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between;margin-bottom:1rem}.cab h1{margin:0}
+.lista-check{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.4rem;max-height:260px;overflow:auto;border:1.5px solid var(--line);border-radius:8px;padding:.6rem;background:#fff}
+.lista-check label{flex-direction:row;align-items:center;gap:.5rem;font-weight:400}
+.criterio{border:1.5px solid var(--line);border-radius:var(--r);padding:1rem;margin-bottom:1rem;background:#fff}
+.criterio .desc{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.6rem;margin-top:.6rem}
+.matriz td,.matriz th{text-align:center}.matriz td:first-child,.matriz th:first-child{text-align:left}
+.cel-ok{color:#17703e;font-weight:700}.cel-pend{color:var(--coral)}
+.stack>*+*{margin-top:1rem}.muted-card{background:#f7fafa}
+.login-form.largo{max-width:460px}.links-login{display:flex;gap:1rem;flex-wrap:wrap}
+.tema-marca{display:inline-block;width:.7rem;height:.7rem;border-radius:50%;margin-right:.4rem;vertical-align:middle}
+.aviso-topo{background:#fdeec8;border:1px solid #e8c56a;border-radius:8px;padding:.6rem .9rem;margin-bottom:1rem}
+@media(max-width:820px){.form-grid{grid-template-columns:1fr}.td-acoes{white-space:normal}.abas{overflow-x:auto;flex-wrap:nowrap}}

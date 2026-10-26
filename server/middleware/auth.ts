@@ -2,6 +2,34 @@ import { Request, Response, NextFunction } from 'express';
 import { HttpError } from '../../src/lib/http-error';
 import { supabase } from '../../src/lib/supabase';
 
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email: string;
+        nome: string;
+        is_superadmin: boolean;
+        institution_id?: string;
+        role?: string;
+      };
+    }
+  }
+}
+
+interface ProfileRow {
+  id: string;
+  nome: string;
+  email: string;
+  status: string;
+  is_superadmin: boolean;
+}
+
+interface VinculoRow {
+  papel: string;
+  situacao: string;
+}
+
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization;
@@ -18,14 +46,15 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       throw new HttpError(401, 'Sessão inválida ou expirada.');
     }
 
-    // Consulta perfil
     const { data: profile, error: profileError } = await supabase
       .from('usuarios')
       .select('id, nome, email, status, is_superadmin')
       .eq('id', user.id)
       .maybeSingle();
 
-    if (profileError || !profile || profile.status !== 'ativo') {
+    const typedProfile = profile as ProfileRow | null;
+
+    if (profileError || !typedProfile || typedProfile.status !== 'ativo') {
       throw new HttpError(403, 'Acesso negado: Conta inativa, pendente ou recusada.');
     }
 
@@ -36,20 +65,22 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       const { data: vinculo } = await supabase
         .from('vinculos_institucionais')
         .select('papel, situacao')
-        .eq('usuario_id', profile.id)
+        .eq('usuario_id', typedProfile.id)
         .eq('instituicao_id', targetInstitutionId)
         .maybeSingle();
 
-      if (vinculo && vinculo.situacao === 'aprovado') {
-        role = vinculo.papel;
+      const typedVinculo = vinculo as VinculoRow | null;
+
+      if (typedVinculo && typedVinculo.situacao === 'aprovado') {
+        role = typedVinculo.papel;
       }
     }
 
     req.user = {
-      id: profile.id,
-      email: profile.email,
-      nome: profile.nome,
-      is_superadmin: !!profile.is_superadmin,
+      id: typedProfile.id,
+      email: typedProfile.email,
+      nome: typedProfile.nome,
+      is_superadmin: !!typedProfile.is_superadmin,
       institution_id: targetInstitutionId,
       role: role
     };
@@ -77,3 +108,5 @@ export function requireRole(allowedRoles: string[]) {
     next();
   };
 }
+
+export { authenticate, requireInstitution, requireSystemRole } from "./auth.contract.js";

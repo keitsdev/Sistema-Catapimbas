@@ -5,6 +5,7 @@ import { validate } from "../middleware/validate.js";
 import { HttpError, assertDatabaseResult } from "../lib/http-error.js";
 import { getAdminSupabase } from "../lib/supabase.js";
 import { audit } from "../services/audit.js";
+import { inList, visibleProjectIds } from "../services/visibility.js";
 
 export const projectsRouter = Router();
 
@@ -38,7 +39,7 @@ projectsRouter.get(
     const pageSize = Number(queryValues.pageSize);
     let query = getAdminSupabase()
       .from("projects")
-      .select("*,team_members(user_id,role),project_advisors(user_id)", {
+      .select(`*,team_members${queryValues.studentId ? "!inner" : ""}(user_id,role),project_advisors${queryValues.advisorId ? "!inner" : ""}(user_id)`, {
         count: "exact",
       })
       .eq("institution_id", req.auth!.institutionId)
@@ -51,6 +52,8 @@ projectsRouter.get(
     if (queryValues.studentId) query = query.eq("team_members.user_id", queryValues.studentId);
     if (queryValues.advisorId) query = query.eq("project_advisors.user_id", queryValues.advisorId);
 
+    const visible = await visibleProjectIds(req.auth!);
+    if (visible) query = query.in("id", visible.length ? visible : ["00000000-0000-0000-0000-000000000000"]);
     const result = await query.order("name").range((page - 1) * pageSize, page * pageSize - 1);
     if (result.error) throw new HttpError(500, "DATABASE_ERROR", "Falha ao listar projetos");
     return res.json({
@@ -86,6 +89,7 @@ projectsRouter.get(
         .from("projects")
         .select("*,team_members(*),project_advisors(*)")
         .eq("id", req.params.id)
+        .in("id", inList(await visibleProjectIds(req.auth!), String(req.params.id)))
         .eq("institution_id", req.auth!.institutionId)
         .is("archived_at", null)
         .maybeSingle(),
@@ -100,7 +104,7 @@ projectsRouter.patch(
   requireInstitution("institution_admin", "coordinator"),
   validate({
     params: z.object({ id: z.string().uuid() }),
-    body: projectSchema.partial().refine((value) => Object.keys(value).length > 0),
+    body: projectSchema.omit({ status: true }).extend({ status: z.enum(["draft", "active", "completed", "cancelled"]) }).partial().refine((value) => Object.keys(value).length > 0),
   }),
   async (req, res) => {
     const project = assertDatabaseResult(
@@ -161,17 +165,19 @@ projectsRouter.put(
     }),
   }),
   async (req, res) => {
-    const result = assertDatabaseResult(
-      await getAdminSupabase().rpc("replace_project_team", {
-        p_institution_id: req.auth!.institutionId,
-        p_project_id: req.params.id,
-        p_members: req.body.members,
-        p_advisor_ids: req.body.advisorIds,
-        p_actor_id: req.auth!.user.id,
-      }),
-      "Não foi possível atualizar a equipe",
-    );
-    await audit(req, "team.replace", "project", String(req.params.id), req.body);
-    return res.json({ data: result });
-  },
+  const projectId = req.params.id as string;
+
+  const rpcResult = await getAdminSupabase().rpc("replace_project_team" as never, {
+    p_institution_id: req.auth!.institutionId,
+    p_project_id: projectId,
+    p_members: req.body.members as unknown,
+    p_advisor_ids: req.body.advisorIds as unknown,
+    p_actor_id: req.auth!.user.id,
+  } as never);
+
+  const result = assertDatabaseResult(rpcResult);
+  if (!result && rpcResult.error) {
+    throw new HttpError(400, "TEAM_UPDATE_FAILED", "Não foi possível atualizar a equipe");
+  }
+},
 );

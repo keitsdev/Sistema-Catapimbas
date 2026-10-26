@@ -5,6 +5,7 @@ import { validate } from "../middleware/validate.js";
 import { HttpError, assertDatabaseResult } from "../lib/http-error.js";
 import { getAdminSupabase } from "../lib/supabase.js";
 import { audit } from "../services/audit.js";
+import { inList, visibleBoardIds } from "../services/visibility.js";
 
 export const boardsRouter = Router();
 
@@ -29,14 +30,15 @@ const boardSchema = boardFields.refine(
 boardsRouter.use(authenticate, requireInstitution());
 
 boardsRouter.get("/", async (req, res) => {
-  const data = assertDatabaseResult(
-    await getAdminSupabase()
-      .from("boards")
-      .select("*,board_projects(count),board_evaluators(count),criteria(count)")
-      .eq("institution_id", req.auth!.institutionId)
-      .is("archived_at", null)
-      .order("starts_at", { ascending: false }),
-  );
+  const visible = await visibleBoardIds(req.auth!);
+  let query = getAdminSupabase()
+    .from("boards")
+    .select("*,board_projects(count),board_evaluators(count),criteria(count)")
+    .eq("institution_id", req.auth!.institutionId)
+    .is("archived_at", null);
+
+  if (visible) query = query.in("id", visible.length ? visible : ["00000000-0000-0000-0000-000000000000"]);
+  const data = assertDatabaseResult(await query.order("starts_at", { ascending: false }));
   return res.json({ data });
 });
 
@@ -51,7 +53,8 @@ boardsRouter.post(
         .insert({ ...req.body, institution_id: req.auth!.institutionId })
         .select()
         .single(),
-    );
+    ) as { id: string };
+
     await audit(req, "create", "board", board.id, req.body);
     return res.status(201).json({ data: board });
   },
@@ -66,9 +69,11 @@ boardsRouter.get(
         .from("boards")
         .select("*,board_projects(*,projects(id,name)),board_evaluators(*),criteria(*,rubrics(*))")
         .eq("id", req.params.id)
+        .in("id", inList(await visibleBoardIds(req.auth!), String(req.params.id)))
         .eq("institution_id", req.auth!.institutionId)
         .maybeSingle(),
     );
+
     if (!board) throw new HttpError(404, "BOARD_NOT_FOUND", "Banca não encontrada");
     return res.json({ data: board });
   },
@@ -90,7 +95,8 @@ boardsRouter.patch(
         .eq("institution_id", req.auth!.institutionId)
         .select()
         .maybeSingle(),
-    );
+    ) as { id: string } | null;
+
     if (!board) throw new HttpError(404, "BOARD_NOT_FOUND", "Banca não encontrada");
     await audit(req, "update", "board", board.id, req.body);
     return res.json({ data: board });
@@ -108,16 +114,19 @@ boardsRouter.put(
     }),
   }),
   async (req, res) => {
-    const data = assertDatabaseResult(
-      await getAdminSupabase().rpc("replace_board_participants", {
-        p_institution_id: req.auth!.institutionId,
-        p_board_id: req.params.id,
-        p_project_ids: req.body.projectIds,
-        p_evaluator_ids: req.body.evaluatorIds,
-        p_actor_id: req.auth!.user.id,
-      }),
-      "Não foi possível atualizar os participantes",
-    );
+    const result = await getAdminSupabase().rpc("replace_board_participants" as never, {
+      p_institution_id: req.auth!.institutionId,
+      p_board_id: req.params.id,
+      p_project_ids: req.body.projectIds,
+      p_evaluator_ids: req.body.evaluatorIds,
+      p_actor_id: req.auth!.user.id,
+    } as never);
+
+    const data = assertDatabaseResult(result);
+    if (!data && result.error) {
+      throw new HttpError(400, "PARTICIPANTS_UPDATE_FAILED", "Não foi possível atualizar os participantes");
+    }
+
     await audit(req, "participants.replace", "board", String(req.params.id), req.body);
     return res.json({ data });
   },
@@ -157,15 +166,18 @@ boardsRouter.put(
     }),
   }),
   async (req, res) => {
-    const data = assertDatabaseResult(
-      await getAdminSupabase().rpc("replace_board_criteria", {
-        p_institution_id: req.auth!.institutionId,
-        p_board_id: req.params.id,
-        p_criteria: req.body.criteria,
-        p_actor_id: req.auth!.user.id,
-      }),
-      "Não foi possível atualizar os critérios",
-    );
+    const result = await getAdminSupabase().rpc("replace_board_criteria" as never, {
+      p_institution_id: req.auth!.institutionId,
+      p_board_id: req.params.id,
+      p_criteria: req.body.criteria as unknown,
+      p_actor_id: req.auth!.user.id,
+    } as never);
+
+    const data = assertDatabaseResult(result);
+    if (!data && result.error) {
+      throw new HttpError(400, "CRITERIA_UPDATE_FAILED", "Não foi possível atualizar os critérios");
+    }
+
     await audit(req, "criteria.replace", "board", String(req.params.id), req.body);
     return res.json({ data });
   },
@@ -189,6 +201,7 @@ boardsRouter.put(
     if (req.body.musicEnabled && !req.body.musicUrl) {
       throw new HttpError(422, "MUSIC_URL_REQUIRED", "Informe a URL da música habilitada");
     }
+
     const data = assertDatabaseResult(
       await getAdminSupabase()
         .from("presentation_settings")
@@ -209,6 +222,7 @@ boardsRouter.put(
         .select()
         .single(),
     );
+
     await audit(req, "presentation.update", "board", String(req.params.id), req.body);
     return res.json({ data });
   },
