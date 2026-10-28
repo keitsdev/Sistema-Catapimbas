@@ -11,7 +11,7 @@ import BancaDetalhe from './pages/BancaDetalhe'
 import MinhasAvaliacoes from './pages/MinhasAvaliacoes'
 import Auditoria from './pages/Auditoria'
 import Perfil from './pages/Perfil'
-import { ConviteRota } from './pages/Convite'
+import Convite, { ConviteRota } from './pages/Convite'
 import Dashboard from './pages/Dashboard'
 import Projetos from './pages/Projetos'
 import Avaliar from './pages/Avaliar'
@@ -21,9 +21,11 @@ import Instituicoes from './pages/Instituicoes'
 
 export default function App() {
   const { user, ctx, sair, trocarVinculo, vinculoIdx } = useAuth()
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
+  const convite = new URLSearchParams(search).get('convite')
   const cor = ctx ? instituicoes.find(i => i.id === ctx.instituicaoId)?.cor : undefined
   useEffect(() => { document.documentElement.style.setProperty('--teal', cor ?? '#0e7c7b') }, [cor])
+  if (convite) return <Convite token={convite} />
   if (!user || !ctx) return <Publico />
   const ativos = user.vinculos.filter(v => v.situacao === 'aprovado')
   const home = ctx.papel === 'avaliador' ? '/avaliar' : '/'

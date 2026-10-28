@@ -21,7 +21,7 @@
 **Fluxo**
 1. Admin abre um projeto (Projetos → clicar no projeto → **Convidar avaliador**) ou uma banca (botão **Convidar avaliador** no topo / aba **Convites**), escolhe validade (1 h a 7 dias) e quantas pessoas podem usar (1 a 10) e clica **Gerar link de convite**.
 2. Copia o link ou envia por WhatsApp. O link só é mostrado nesse momento (no banco fica apenas o hash).
-3. O convidado abre `…/convite/<token>`, vê o projeto, informa **nome e e-mail (obrigatórios)** e **instituição (opcional)**, e clica **Quero avaliar este projeto**. Sem aprovação, sem escolher senha.
+3. O convidado abre o link gerado (agora no formato `…/?convite=<token>`), vê o projeto, informa **nome e e-mail (obrigatórios)** e **instituição (opcional)**, e clica **Quero avaliar este projeto**. O formato usa a página inicial para funcionar também em hospedagens estáticas que não configuram fallback de rotas. Links antigos no formato `…/convite/<token>` continuam suportados pelo frontend quando a hospedagem redireciona essas URLs para `index.html`.
 4. Recebe uma **senha temporária** (mostrada uma vez, com botão copiar) e entra direto em **Avaliar**.
 
 **Restrição:** o convidado vira avaliador **somente daquele projeto naquela banca**. Ele só vê esse projeto e essa banca, só lança nota nele, não vê menus administrativos e digitar `/bancas`, `/auditoria` etc. na URL o devolve para `/avaliar`. Não pode ser designado a outra banca. Se for bloqueado em **Pessoas**, perde o acesso na chamada seguinte.

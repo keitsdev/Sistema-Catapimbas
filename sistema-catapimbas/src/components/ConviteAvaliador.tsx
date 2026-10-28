@@ -3,6 +3,7 @@ import { Aviso, Campo, Tag, dataHora, useAcao, useCarregar } from './ui'
 import { useAuth } from '../auth'
 import { listarBancas } from '../api'
 import { VALIDADES, criarConvite, listarConvites, opcoesConviteSuperadmin, revogarConvite } from '../servicos/convites'
+import { criarUrlConvite } from '../servicos/link-convite'
 import type { Projeto } from '../types'
 
 export default function ConviteAvaliador({ bancaId, projetoId }: { bancaId: number; projetoId: number }) {
@@ -11,7 +12,7 @@ export default function ConviteAvaliador({ bancaId, projetoId }: { bancaId: numb
   const lista = useCarregar(() => listarConvites(ctx!, { bancaId, projetoId }), [ctx, bancaId, projetoId])
   useEffect(() => { setLink(''); setCopiado(false); a.limpar() }, [bancaId, projetoId])
   async function gerar() {
-    await a.executar(async () => { const r = await criarConvite(ctx!, { bancaId, projetoId, validadeHoras: validade, maxUsos }); setLink(`${location.origin}/convite/${r.token}`); setCopiado(false); lista.recarregar() }, 'Link gerado! Copie e envie agora: por segurança ele não é mostrado de novo.')
+    await a.executar(async () => { const r = await criarConvite(ctx!, { bancaId, projetoId, validadeHoras: validade, maxUsos }); setLink(criarUrlConvite(location.origin, import.meta.env.BASE_URL, r.token)); setCopiado(false); lista.recarregar() }, 'Link gerado! Copie e envie agora: por segurança ele não é mostrado de novo.')
   }
   async function copiar() { try { await navigator.clipboard.writeText(link) } catch { (document.getElementById('link-convite') as HTMLInputElement | null)?.select(); document.execCommand('copy') } setCopiado(true) }
   return (
