@@ -3,13 +3,14 @@ import { listarProjetos } from '../api'
 import { useAuth } from '../auth'
 import { Aviso, Campo, Erro, baixarXlsx, useAcao, useCarregar } from '../components/ui'
 import { EquipeEditor, ProjetoForm } from '../components/ProjetoEditores'
+import { ConvitePorProjeto } from '../components/ConviteAvaliador'
 import { diretorio } from '../servicos/acesso'
 import { arquivarProjeto, atualizarProjetoAluno, dadosExportacaoProjetos } from '../servicos/projetos'
 import type { Projeto } from '../types'
 
 const POR_PAGINA = 4
 const STATUS = { em_andamento: 'Em andamento', concluido: 'Concluído', arquivado: 'Arquivado' }
-type Modo = 'nenhum' | 'novo' | 'editar' | 'equipe' | 'descricao' | 'arquivar'
+type Modo = 'nenhum' | 'novo' | 'editar' | 'equipe' | 'descricao' | 'arquivar' | 'convite'
 
 export default function Projetos() {
   const { ctx } = useAuth(); const gestor = ctx!.papel === 'admin' || ctx!.papel === 'coordenador'
@@ -58,8 +59,10 @@ export default function Projetos() {
         <Aviso msg={a.msg} />
         <div className="acoes"><button className="ghost" onClick={() => setSelId(undefined)}>Fechar</button>
           {gestor && <><button className="ghost" onClick={() => setModo('editar')}>Editar dados</button><button className="ghost" onClick={() => setModo('equipe')}>Equipe e orientador</button></>}
+          {ctx!.papel === 'admin' && <button onClick={() => setModo('convite')}>Convidar avaliador</button>}
           {ctx!.papel === 'admin' && <button className="perigo" onClick={() => setModo('arquivar')}>Arquivar</button>}
           {ctx!.papel === 'aluno' && souDoProjeto && <button className="ghost" onClick={() => { setDesc(sel.descricao); setModo('descricao') }}>Editar descrição</button>}</div></aside>}
+      {sel && modo === 'convite' && <ConvitePorProjeto projeto={sel} onFechar={() => setModo('nenhum')} />}
       {sel && modo === 'editar' && <ProjetoForm projeto={sel} onFim={fim} />}
       {sel && modo === 'equipe' && <EquipeEditor projeto={sel} onFim={fim} />}
       {sel && modo === 'descricao' && <section className="card detalhe"><h2>Descrição de {sel.nome}</h2><p className="muted small">Como integrante, você pode atualizar apenas a descrição.</p>

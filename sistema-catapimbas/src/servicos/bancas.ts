@@ -69,6 +69,10 @@ export async function definirParticipantes(ctx: Contexto, id: number, projetoIds
   const validosA = new Set((await diretorio(ctx, 'avaliador')).map(x => x.id))
   if (projetoIds.some(p => !validosP.has(p))) throw new HttpError(422, 'Há projeto que não pertence a esta instituição.')
   if (avaliadorIds.some(a => !validosA.has(a))) throw new HttpError(422, 'Há avaliador sem vínculo aprovado nesta instituição.')
+  for (const a of avaliadorIds) {
+    const esc = usuarios.find(u => u.id === a)?.vinculos.find(v => v.instituicaoId === ctx.instituicaoId && v.situacao === 'aprovado')?.escopo
+    if (esc && esc.bancaId !== id) throw new HttpError(422, 'Um avaliador convidado por link só pode atuar na banca para a qual foi convidado.')
+  }
   const comNota = avaliacoes.filter(a => a.bancaId === id)
   if (comNota.some(a => !projetoIds.includes(a.projetoId) || !avaliadorIds.includes(a.avaliadorId))) throw new HttpError(409, 'Há avaliações lançadas para algum participante removido. Invalide-as antes ou duplique a banca.')
   b.projetoIds = [...new Set(projetoIds)]; b.avaliadorIds = [...new Set(avaliadorIds)]
@@ -95,7 +99,7 @@ export async function configurarApresentacao(ctx: Contexto, id: number, a: Apres
   await espera(); autorizar(ctx, ...GESTAO); const b = daBanca(ctx, id)
   if (!(a.volume >= 0 && a.volume <= 1)) throw new HttpError(422, 'Volume entre 0 e 1.')
   if (!(Number.isInteger(a.atrasoMs) && a.atrasoMs >= 0 && a.atrasoMs <= 60000)) throw new HttpError(422, 'Atraso entre 0 e 60000 ms.')
-  if (a.musicaAtiva && !/^https?:\/\/\S+$/.test(a.musicaUrl)) throw new HttpError(422, 'Informe a URL (http/https) da música habilitada.')
+  if (a.musicaAtiva && !/^(https?:\/\/|blob:)\S+$/.test(a.musicaUrl)) throw new HttpError(422, 'Envie um arquivo de áudio (ou informe o link direto do arquivo) para habilitar a música.')
   b.apresentacao = { ...a }; registrarAuditoria(ctx, 'banca.apresentacao', 'banca', id); return b
 }
 

@@ -17,6 +17,22 @@ interface IdRow {
   id: string;
 }
 
+interface ScopeRow {
+  scope_board_id: string | null;
+  scope_project_id: string | null;
+}
+
+export async function evaluatorScope(auth: Auth): Promise<{ boardId: string; projectId: string } | null> {
+  const result = await getAdminSupabase()
+    .from("institutional_memberships")
+    .select("scope_board_id,scope_project_id")
+    .eq("institution_id", auth.institutionId!)
+    .eq("user_id", auth.user.id)
+    .maybeSingle();
+  const row = assertDatabaseResult(result) as unknown as ScopeRow | null;
+  return row?.scope_board_id && row.scope_project_id ? { boardId: row.scope_board_id, projectId: row.scope_project_id } : null;
+}
+
 export async function visibleProjectIds(auth: Auth): Promise<string[] | null> {
   if (isManager(auth)) return null;
   const db = getAdminSupabase();
@@ -34,6 +50,9 @@ export async function visibleProjectIds(auth: Auth): Promise<string[] | null> {
     const rows = (assertDatabaseResult(queryResult) ?? []) as ProjectIdRow[];
     return rows.map((r) => r.project_id);
   }
+
+  const scope = await evaluatorScope(auth);
+  if (scope) return [scope.projectId];
 
   const boardsResult = await db
     .from("board_evaluators")
@@ -57,6 +76,8 @@ export async function visibleBoardIds(auth: Auth): Promise<string[] | null> {
   const db = getAdminSupabase();
 
   if (auth.role === "evaluator") {
+    const scope = await evaluatorScope(auth);
+    if (scope) return [scope.boardId];
     const queryResult = await db.from("board_evaluators").select("board_id").eq("evaluator_id", auth.user.id);
     const rows = (assertDatabaseResult(queryResult) ?? []) as BoardIdRow[];
     return rows.map((r) => r.board_id);

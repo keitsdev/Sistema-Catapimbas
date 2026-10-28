@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { MENU, useAuth } from './auth'
 import { instituicoes, nomeInstituicao } from './api'
 import { PAPEL_LABEL } from './types'
@@ -11,6 +11,7 @@ import BancaDetalhe from './pages/BancaDetalhe'
 import MinhasAvaliacoes from './pages/MinhasAvaliacoes'
 import Auditoria from './pages/Auditoria'
 import Perfil from './pages/Perfil'
+import { ConviteRota } from './pages/Convite'
 import Dashboard from './pages/Dashboard'
 import Projetos from './pages/Projetos'
 import Avaliar from './pages/Avaliar'
@@ -20,11 +21,14 @@ import Instituicoes from './pages/Instituicoes'
 
 export default function App() {
   const { user, ctx, sair, trocarVinculo, vinculoIdx } = useAuth()
+  const { pathname } = useLocation()
   const cor = ctx ? instituicoes.find(i => i.id === ctx.instituicaoId)?.cor : undefined
   useEffect(() => { document.documentElement.style.setProperty('--teal', cor ?? '#0e7c7b') }, [cor])
   if (!user || !ctx) return <Publico />
   const ativos = user.vinculos.filter(v => v.situacao === 'aprovado')
   const home = ctx.papel === 'avaliador' ? '/avaliar' : '/'
+  const liberada = pathname === '/' || pathname.startsWith('/convite/') || MENU.some(m => m.papeis.includes(ctx.papel) && (pathname === m.to || pathname.startsWith(`${m.to}/`)))
+  if (!liberada) return <Navigate to={home} replace />
   return (
     <div className="shell">
       <aside className="side">
@@ -58,6 +62,7 @@ export default function App() {
           <Route path="/minhas-avaliacoes" element={<MinhasAvaliacoes />} />
           <Route path="/auditoria" element={<Auditoria />} />
           <Route path="/perfil" element={<Perfil />} />
+          <Route path="/convite/:token" element={<ConviteRota />} />
           <Route path="*" element={<Navigate to={home} />} />
         </Routes>
       </main>

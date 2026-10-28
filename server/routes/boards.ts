@@ -5,6 +5,7 @@ import { validate } from "../middleware/validate.js";
 import { HttpError, assertDatabaseResult } from "../lib/http-error.js";
 import { getAdminSupabase } from "../lib/supabase.js";
 import { audit } from "../services/audit.js";
+import { removeStoredMusic } from "../services/music.js";
 import { inList, visibleBoardIds } from "../services/visibility.js";
 
 export const boardsRouter = Router();
@@ -195,11 +196,18 @@ boardsRouter.put(
       volume: z.number().min(0).max(1).default(0.8),
       revealDelayMs: z.number().int().min(0).max(60_000).default(1000),
       confettiEnabled: z.boolean().default(true),
+      keepUploadedMusic: z.boolean().default(false),
     }),
   }),
   async (req, res) => {
-    if (req.body.musicEnabled && !req.body.musicUrl) {
+    const keep = req.body.keepUploadedMusic === true;
+    if (req.body.musicEnabled && !req.body.musicUrl && !keep) {
       throw new HttpError(422, "MUSIC_URL_REQUIRED", "Informe a URL da música habilitada");
+    }
+
+    if (!keep) {
+      const current = assertDatabaseResult(await getAdminSupabase().from("presentation_settings").select("music_url").eq("board_id", req.params.id).eq("institution_id", req.auth!.institutionId).maybeSingle()) as unknown as { music_url: string | null } | null;
+      if (current?.music_url !== req.body.musicUrl) await removeStoredMusic(current?.music_url);
     }
 
     const data = assertDatabaseResult(
@@ -211,7 +219,7 @@ boardsRouter.put(
             institution_id: req.auth!.institutionId,
             music_enabled: req.body.musicEnabled,
             music_title: req.body.musicTitle,
-            music_url: req.body.musicUrl,
+            ...(keep ? {} : { music_url: req.body.musicUrl }),
             volume: req.body.volume,
             reveal_delay_ms: req.body.revealDelayMs,
             confetti_enabled: req.body.confettiEnabled,

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Abas, Aviso, Erro, Tag, useAcao, useCarregar } from '../components/ui'
 import { useAuth } from '../auth'
 import { decidirSolicitacaoPlataforma, listarUsuariosPlataforma, solicitacoesPlataforma, visaoPlataforma } from '../servicos/plataforma'
+import { ConviteSuperadmin } from '../components/ConviteAvaliador'
 import { PAPEL_LABEL, SITUACAO_LABEL, type Papel } from '../types'
 
 export default function Plataforma() {
@@ -13,7 +14,7 @@ export default function Plataforma() {
   const v = visao.dados
   return (<>
     <h1>Plataforma</h1>
-    <Abas atual={aba} onChange={setAba} abas={[['geral', 'Visão geral'], ['cadastros', `Cadastros pendentes${pend.dados?.length ? ` (${pend.dados.length})` : ''}`], ['usuarios', 'Usuários']]} />
+    <Abas atual={aba} onChange={setAba} abas={[['geral', 'Visão geral'], ['cadastros', `Cadastros pendentes${pend.dados?.length ? ` (${pend.dados.length})` : ''}`], ['usuarios', 'Usuários'], ['convites', 'Convidar avaliador']]} />
     <Erro texto={visao.erro || pend.erro || usuarios.erro} /><Aviso msg={a.msg} />
     {aba === 'geral' && v && <>
       <div className="kpis">{([['Instituições', `${v.ativas} ativas de ${v.instituicoes}`], ['Usuários', v.usuarios], ['Projetos', v.projetos], ['Bancas', v.bancas], ['Cadastros pendentes', v.pendentes]] as [string, string | number][]).map(([l, x]) => <div className="kpi" key={l}><b>{x}</b><span>{l}</span></div>)}</div>
@@ -27,6 +28,7 @@ export default function Plataforma() {
           <input placeholder="Justificativa (obrigatória para recusar)" aria-label={`Justificativa para ${s.nome}`} value={just[s.id] ?? ''} onChange={e => setJust({ ...just, [s.id]: e.target.value })} /></div>
         <div className="acoes"><button onClick={() => decidir(s.id, true, s.papel)}>Aprovar</button><button className="ghost" onClick={() => decidir(s.id, false, s.papel)}>Recusar</button></div>
       </div>)))}
+    {aba === 'convites' && <ConviteSuperadmin />}
     {aba === 'usuarios' && <div className="tabela-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Vínculos</th></tr></thead>
       <tbody>{usuarios.dados?.map(u => <tr key={u.id}><td>{u.nome}</td><td>{u.email}</td><td>{u.vinculos.map((x, i) => <div key={i}>{x.instituicao} · {PAPEL_LABEL[x.papel]} · <Tag valor={x.situacao} rotulo={SITUACAO_LABEL[x.situacao]} /></div>)}</td></tr>)}</tbody></table></div>}
   </>)

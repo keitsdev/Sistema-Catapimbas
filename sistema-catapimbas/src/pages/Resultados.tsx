@@ -7,8 +7,8 @@ import { APRESENTACAO_PADRAO, obterApresentacao } from '../servicos/bancas'
 import type { Banca, LinhaRanking } from '../types'
 
 const MEDALHA = ['', 'Ouro', 'Prata', 'Bronze']
-function tocar() {
-  const a = new AudioContext();[523, 659, 784, 1047].forEach((f, i) => { const o = a.createOscillator(), g = a.createGain(); o.frequency.value = f; o.connect(g); g.connect(a.destination)
+function tocar(ac?: AudioContext) {
+  const a = ac ?? new AudioContext();[523, 659, 784, 1047].forEach((f, i) => { const o = a.createOscillator(), g = a.createGain(); o.frequency.value = f; o.connect(g); g.connect(a.destination)
     g.gain.setValueAtTime(0.15, a.currentTime + i * 0.18); g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + i * 0.18 + 0.4); o.start(a.currentTime + i * 0.18); o.stop(a.currentTime + i * 0.18 + 0.45) })
 }
 export default function Resultados() {
@@ -16,7 +16,7 @@ export default function Resultados() {
   const [bancas, setBancas] = useState<Banca[]>([]); const [id, setId] = useState(0)
   const [linhas, setLinhas] = useState<LinhaRanking[]>([]); const [erro, setErro] = useState('')
   const [mudo, setMudo] = useState(false); const [apresentando, setApresentando] = useState(false); const [rev, setRev] = useState(0);
-  const timer = useRef<number | undefined>(undefined); const musica = useRef<HTMLAudioElement | undefined>(undefined); const [ap, setAp] = useState(APRESENTACAO_PADRAO);
+  const timer = useRef<number | undefined>(undefined); const musica = useRef<HTMLAudioElement | undefined>(undefined); const [ap, setAp] = useState(APRESENTACAO_PADRAO); const acRef = useRef<AudioContext | undefined>(undefined); const [aviso, setAviso] = useState('');
   const carregar = (bid: number) => { setErro(''); ranking(ctx!, bid).then(setLinhas).catch(e => { setLinhas([]); setErro(e.message) }) }
   useEffect(() => { listarBancas(ctx!).then(b => { setBancas(b); if (b[0]) setId(b[0].id) }) }, [ctx])
   useEffect(() => { if (id) { carregar(id); obterApresentacao(ctx!, id).then(setAp).catch(() => setAp(APRESENTACAO_PADRAO)) } }, [id])
@@ -26,8 +26,15 @@ export default function Resultados() {
   const podio = [2, 1, 3].map(pos => ({ pos, itens: linhas.filter(l => l.posicao === pos) }))
 
   function iniciar() {
-    setApresentando(true); setRev(0); clearTimeout(timer.current); musica.current?.pause()
-    const passo = (n: number) => { setRev(n); if (n >= 1) { if (ap.confete && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 } }); if (!mudo && n === 3) { if (ap.musicaAtiva && ap.musicaUrl) { const au = new Audio(ap.musicaUrl); au.volume = ap.volume; musica.current = au; au.play().catch(() => tocar()) } else tocar() } } if (n < 3) timer.current = window.setTimeout(() => passo(n + 1), ap.atrasoMs) }
+    setApresentando(true); setRev(0); setAviso(''); clearTimeout(timer.current); musica.current?.pause(); musica.current = undefined
+    acRef.current ??= new AudioContext(); acRef.current.resume().catch(() => undefined)
+    let au: HTMLAudioElement | undefined
+    if (ap.musicaAtiva && ap.musicaUrl) {
+      au = new Audio(ap.musicaUrl); au.volume = ap.volume; au.preload = 'auto'; au.muted = true; musica.current = au
+      au.play().then(() => { au!.pause(); au!.currentTime = 0; au!.muted = false }).catch(() => { au!.muted = false })
+    }
+    const somDoPodio = () => { if (!au) return tocar(acRef.current); au.play().catch(() => { setAviso('Não foi possível tocar a música configurada (arquivo ou link inválido). Foi usado o som padrão.'); tocar(acRef.current) }) }
+    const passo = (n: number) => { setRev(n); if (n >= 1) { if (ap.confete && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 } }); if (!mudo && n === 3) somDoPodio() } if (n < 3) timer.current = window.setTimeout(() => passo(n + 1), ap.atrasoMs) }
     timer.current = window.setTimeout(() => passo(1), 400)
   }
   async function exportar() {
@@ -52,6 +59,8 @@ export default function Resultados() {
         <p className="muted small">Pontuação = média dos avaliadores; cada avaliador usa a média ponderada pelos pesos. Empates compartilham a posição.</p>
         <div className="acoes"><button onClick={exportar}>Exportar Excel</button><button className="ghost" onClick={iniciar}>{apresentando ? 'Repetir animação' : 'Modo apresentação do pódio'}</button>
           <button className="ghost" aria-pressed={mudo} onClick={() => { if (!mudo) musica.current?.pause(); setMudo(!mudo) }}>{mudo ? 'Ativar som' : 'Silenciar'}</button></div>
+        {aviso && <p role="status" className="aviso-topo">{aviso}</p>}
+        {apresentando && ap.musicaAtiva && ap.musicaUrl && <p className="muted small">♪ {ap.musicaTitulo || ap.musicaArquivo || 'Música do pódio'}</p>}
         {apresentando && <section className="podio" aria-label="Pódio">{podio.map(({ pos, itens }) => (
           <div key={pos} className={`degrau p${pos} ${(rev >= 4 - pos) ? 'on' : ''}`} style={{ '--h': `${pos === 1 ? 220 : pos === 2 ? 160 : 120}px` } as React.CSSProperties}>
             <div className="nomes">{itens.map(i => <b key={i.projeto.id}>{i.projeto.nome}</b>)}{!itens.length && <em>—</em>}</div>

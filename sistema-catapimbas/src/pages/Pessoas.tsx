@@ -22,7 +22,7 @@ export default function Pessoas() {
     </div>
     <Erro texto={erro} />{!alvo && <Aviso msg={a.msg} />}
     {!pg.visiveis.length ? <p className="vazio">Nenhuma pessoa encontrada.</p> : <div className="tabela-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Situação</th>{gestor && <th>Ações</th>}</tr></thead>
-      <tbody>{pg.visiveis.map(p => <tr key={p.usuarioId}><td>{p.nome}</td><td>{p.email}</td>
+      <tbody>{pg.visiveis.map(p => <tr key={p.usuarioId}><td>{p.nome}{p.convidadoPara && <div className="muted small">Convidado por link · só avalia: {p.convidadoPara}</div>}</td><td>{p.email}</td>
         <td>{gestor && p.situacao === 'aprovado' && p.usuarioId !== ctx!.usuarioId ? <select aria-label={`Papel de ${p.nome}`} value={p.papel} onChange={e => rodar(() => alterarPapel(ctx!, p.usuarioId, e.target.value as Papel), 'Papel alterado.')}>{PAPEIS_INSTITUCIONAIS.map(x => <option key={x} value={x}>{PAPEL_LABEL[x]}</option>)}</select> : PAPEL_LABEL[p.papel]}</td>
         <td><Tag valor={p.situacao} rotulo={SITUACAO_LABEL[p.situacao]} />{p.justificativa && <div className="muted small">{p.justificativa}</div>}</td>
         {gestor && <td className="td-acoes">{p.usuarioId === ctx!.usuarioId ? <span className="muted small">você</span> : p.situacao === 'aprovado'

@@ -19,6 +19,8 @@ import { auditRouter } from "./routes/audit-logs.js";
 import { boardsExtraRouter } from "./routes/boards-extra.js";
 import { directoryRouter } from "./routes/directory.js";
 import { platformRouter } from "./routes/platform.js";
+import { invitationsRouter } from "./routes/invitations.js";
+import { presentationMusicRouter } from "./routes/presentation-music.js";
 import { projectsExtraRouter } from "./routes/projects-extra.js";
 import { publicRouter } from "./routes/public.js";
 import { sessionRouter } from "./routes/session.js";
@@ -68,6 +70,8 @@ export function createApp() {
   api.use("/projects", projectsExtraRouter);
   api.use("/boards", boardsRouter);
   api.use("/boards", boardsExtraRouter);
+  api.use("/boards", presentationMusicRouter);
+  api.use("/invitations", invitationsRouter);
   api.use("/directory", directoryRouter);
   api.use("/platform", platformRouter);
   api.use("/audit-logs", auditRouter);

@@ -17,6 +17,9 @@ interface MemberRow {
   rejection_reason: string | null;
   status_reason: string | null;
   created_at: string;
+  scope_project_id: string | null;
+  scope_board_id: string | null;
+  organization: string | null;
 }
 
 directoryRouter.get(
@@ -32,7 +35,7 @@ directoryRouter.get(
     
     let q = getAdminSupabase()
       .from("institutional_memberships")
-      .select("id,user_id,role,status,rejection_reason,status_reason,created_at")
+      .select("id,user_id,role,status,rejection_reason,status_reason,created_at,scope_project_id,scope_board_id,organization")
       .eq("institution_id", req.auth!.institutionId);
 
     if (role) q = q.eq("role", role);
@@ -54,6 +57,8 @@ directoryRouter.get(
         role: r.role,
         status: r.status,
         reason: r.rejection_reason ?? r.status_reason,
+        organization: r.organization,
+        invitedFor: r.scope_project_id ? { boardId: r.scope_board_id, projectId: r.scope_project_id } : null,
       })),
     });
   },

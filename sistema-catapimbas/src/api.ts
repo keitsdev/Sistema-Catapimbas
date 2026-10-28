@@ -109,12 +109,15 @@ export const nomeInstituicao = (id: number) => instituicoes.find(i => i.id === i
 export const listarInstituicoes = async (ctx: Contexto) => { await espera(); exigir(ctx, 'superadmin'); return [...instituicoes] }
 
 export interface Filtros { busca?: string; ano?: number; semestre?: number; alunoId?: number; orientadorId?: number; status?: Projeto['status'] }
+export const escopoDoAvaliador = (ctx: Contexto) => usuarios.find(u => u.id === ctx.usuarioId)?.vinculos.find(v => v.instituicaoId === ctx.instituicaoId && v.situacao === 'aprovado')?.escopo
 export function projetosVisiveis(ctx: Contexto): Projeto[] {
   const papel = autorizar(ctx)
   const da = projetos.filter(p => p.instituicaoId === ctx.instituicaoId && p.status !== 'arquivado')
   if (papel === 'orientador') return da.filter(p => p.orientadorId === ctx.usuarioId)
   if (papel === 'aluno') return da.filter(p => p.equipeIds?.includes(ctx.usuarioId))
   if (papel === 'avaliador') {
+    const esc = escopoDoAvaliador(ctx)
+    if (esc) return da.filter(p => p.id === esc.projetoId && bancas.some(b => b.id === esc.bancaId && !b.arquivadaEm && b.projetoIds.includes(p.id)))
     const ids = new Set(bancas.filter(b => b.instituicaoId === ctx.instituicaoId && !b.arquivadaEm && b.avaliadorIds.includes(ctx.usuarioId)).flatMap(b => b.projetoIds))
     return da.filter(p => ids.has(p.id))
   }
@@ -132,7 +135,7 @@ export const bancasVisiveis = (ctx: Contexto): Banca[] => {
   const papel = autorizar(ctx)
   const da = bancas.filter(b => b.instituicaoId === ctx.instituicaoId && !b.arquivadaEm)
   if (papel === 'admin' || papel === 'coordenador') return da
-  if (papel === 'avaliador') return da.filter(b => b.avaliadorIds.includes(ctx.usuarioId))
+  if (papel === 'avaliador') { const esc = escopoDoAvaliador(ctx); return da.filter(b => b.avaliadorIds.includes(ctx.usuarioId) && (!esc || b.id === esc.bancaId)) }
   return da.filter(b => b.status === 'publicada')
 }
 export const listarBancas = async (ctx: Contexto) => { await espera(); return bancasVisiveis(ctx) }
@@ -145,6 +148,8 @@ export async function enviarAvaliacao(ctx: Contexto, bancaId: number, projetoId:
   await espera()
   const banca = doTenant(ctx, bancas.find(b => b.id === bancaId))
   exigir(ctx, 'avaliador')
+  const esc = escopoDoAvaliador(ctx)
+  if (esc && (esc.bancaId !== bancaId || esc.projetoId !== projetoId)) throw new HttpError(403, 'Seu convite permite avaliar somente o projeto para o qual você foi convidado.')
   if (banca.status !== 'aberta') throw new HttpError(409, 'Esta banca não está aberta para avaliação.')
   if (!banca.avaliadorIds.includes(ctx.usuarioId) || !banca.projetoIds.includes(projetoId)) throw new HttpError(403, 'Você não foi designado para este projeto.')
   if (banca.criterios.some(c => !(notas[c.id] >= 1 && notas[c.id] <= 5))) throw new HttpError(422, 'Preencha todos os critérios com notas de 1 a 5.')

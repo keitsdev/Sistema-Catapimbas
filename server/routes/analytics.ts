@@ -5,6 +5,7 @@ import { validate } from "../middleware/validate.js";
 import { HttpError, assertDatabaseResult } from "../lib/http-error.js";
 import { getAdminSupabase } from "../lib/supabase.js";
 import { exportProjects, exportRanking } from "../services/export.js";
+import { isStoredMusic, playableMusicUrl } from "../services/music.js";
 import { calculateRanking } from "../services/ranking.js";
 
 export const analyticsRouter = Router();
@@ -36,6 +37,8 @@ analyticsRouter.get(
   },
 );
 
+const storedUrl = (settings: unknown) => (settings as { music_url: string | null }).music_url;
+
 analyticsRouter.get(
   "/boards/:id/presentation",
   validate({ params: z.object({ id: z.string().uuid() }) }),
@@ -59,7 +62,7 @@ analyticsRouter.get(
       data: {
         ranking,
         podium: ranking.entries.filter((entry) => entry.rank <= 3),
-        presentation: settings ?? {
+        presentation: settings ? { ...settings, music_url: await playableMusicUrl(storedUrl(settings)), music_is_file: isStoredMusic(storedUrl(settings)) } : {
           music_enabled: false,
           music_title: null,
           music_url: null,

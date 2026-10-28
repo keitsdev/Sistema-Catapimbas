@@ -1,4 +1,4 @@
-import { HttpError, autorizar, espera, instituicoes, proximoId, registrarAuditoria, senhas, solicitacoes, usuarios } from '../api'
+import { HttpError, autorizar, bancas, espera, instituicoes, projetos, proximoId, registrarAuditoria, senhas, solicitacoes, usuarios } from '../api'
 import type { Contexto, Papel, Pessoa, Vinculo } from '../types'
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -62,7 +62,8 @@ export async function alterarSenha(ctx: Contexto, atual: string, nova: string) {
 }
 
 const pessoasDa = (instId: number): Pessoa[] => usuarios.flatMap(u => u.vinculos.filter(v => v.instituicaoId === instId)
-  .map(v => ({ usuarioId: u.id, nome: u.nome, email: u.email, papel: v.papel, situacao: v.situacao, justificativa: v.justificativa })))
+  .map(v => ({ usuarioId: u.id, nome: u.nome, email: u.email, papel: v.papel, situacao: v.situacao, justificativa: v.justificativa,
+    convidadoPara: v.escopo ? `${projetos.find(p => p.id === v.escopo!.projetoId)?.nome ?? '?'} · ${bancas.find(b => b.id === v.escopo!.bancaId)?.nome ?? '?'}` : undefined })))
 
 export async function listarPessoas(ctx: Contexto): Promise<Pessoa[]> {
   await espera(); autorizar(ctx, 'admin', 'coordenador')
@@ -71,7 +72,7 @@ export async function listarPessoas(ctx: Contexto): Promise<Pessoa[]> {
 
 export async function diretorio(ctx: Contexto, papel: Papel) {
   await espera(); autorizar(ctx, 'admin', 'coordenador')
-  return pessoasDa(ctx.instituicaoId).filter(p => p.papel === papel && p.situacao === 'aprovado').map(p => ({ id: p.usuarioId, nome: p.nome, email: p.email }))
+  return pessoasDa(ctx.instituicaoId).filter(p => p.papel === papel && p.situacao === 'aprovado').map(p => ({ id: p.usuarioId, nome: p.nome, email: p.email, convidadoPara: p.convidadoPara }))
 }
 const vinculoAlvo = (instId: number, usuarioId: number): Vinculo => {
   const v = usuarios.find(u => u.id === usuarioId)?.vinculos.find(x => x.instituicaoId === instId)
