@@ -5,10 +5,12 @@ build/
 .env
 .env*
 .env.*
+!.env.example
+!**/.env.example
 .vite/
-vite.config.*.timestamp-*
+vite.config..timestamp-
 *.tsbuildinfo
-*-debug.log*
+-debug.log
 logs/
 *.log
 .claude-replay.*
@@ -19,5 +21,6 @@ README2.md
 # client-initiated single-repo workspace layout (make's `Path: "."` spec) the
 # repo root IS the workspace root, so these land inside this repo rather than
 # beside it.
+
 /.plugins/
 /.opencode-skills/

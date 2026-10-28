@@ -6,6 +6,8 @@ import helmet from "helmet";
 import { pinoHttp } from "pino-http";
 import swaggerUi from "swagger-ui-express";
 import { getEnv } from "./config/env.js";
+import { getAdminSupabase } from "./lib/supabase.js";
+import { LEGACY_SCHEMA } from "./repositories/legacy-users.js";
 import { errorHandler, notFound } from "./middleware/errors.js";
 import { openApiDocument } from "./openapi.js";
 import { analyticsRouter } from "./routes/analytics.js";
@@ -60,6 +62,28 @@ export function createApp() {
   api.get("/health", (_req, res) =>
     res.json({ status: "ok", timestamp: new Date().toISOString() }),
   );
+  api.get("/health/ready", async (_req, res) => {
+    try {
+      const { error } = await getAdminSupabase().from(LEGACY_SCHEMA.users).select("id,auth_user_id", { head: true }).limit(1);
+      if (error) {
+        const schemaMismatch = error.code === "PGRST205" || error.code === "42P01";
+        return res.status(503).json({
+          status: "not_ready",
+          checks: { api: "ok", supabase: schemaMismatch ? "schema_mismatch" : "unavailable" },
+          message: schemaMismatch
+            ? "Supabase respondeu, mas a tabela Usuario ou a coluna auth_user_id esperada pela adaptação não está disponível."
+            : "Não foi possível validar o acesso do backend ao Supabase.",
+        });
+      }
+      return res.json({ status: "ready", checks: { api: "ok", supabase: "ok", schema: "ok" } });
+    } catch {
+      return res.status(503).json({
+        status: "not_ready",
+        checks: { api: "ok", supabase: "unavailable" },
+        message: "Não foi possível validar o acesso do backend ao Supabase. Confira a configuração do servidor.",
+      });
+    }
+  });
   api.use("/docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
   api.use("/public", publicRouter);
   api.use("/auth", authRouter);

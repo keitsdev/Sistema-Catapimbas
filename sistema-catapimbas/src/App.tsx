@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { MENU, useAuth } from './auth'
-import { instituicoes, nomeInstituicao } from './api'
+import { instituicoes as instituicoesDemo } from './api'
 import { PAPEL_LABEL } from './types'
 import Publico from './pages/Publico'
 import Plataforma from './pages/Plataforma'
@@ -20,10 +20,12 @@ import Aprovacoes from './pages/Aprovacoes'
 import Instituicoes from './pages/Instituicoes'
 
 export default function App() {
-  const { user, ctx, sair, trocarVinculo, vinculoIdx } = useAuth()
+  const { user, ctx, sair, trocarVinculo, vinculoIdx, instituicoes: instituicoesApi, modoApi } = useAuth()
   const { pathname, search } = useLocation()
   const convite = new URLSearchParams(search).get('convite')
-  const cor = ctx ? instituicoes.find(i => i.id === ctx.instituicaoId)?.cor : undefined
+  const instituicoesAtuais = instituicoesApi.length ? instituicoesApi : instituicoesDemo
+  const nomeInst = (id: number) => instituicoesAtuais.find(i => i.id === id)?.nome ?? `Instituição ${id}`
+  const cor = ctx ? instituicoesAtuais.find(i => i.id === ctx.instituicaoId)?.cor : undefined
   useEffect(() => { document.documentElement.style.setProperty('--teal', cor ?? '#0e7c7b') }, [cor])
   if (convite) return <Convite token={convite} />
   if (!user || !ctx) return <Publico />
@@ -40,17 +42,18 @@ export default function App() {
         </nav>
         <div className="who">
           <strong>{user.nome}</strong>
-          <span>{PAPEL_LABEL[ctx.papel]} · {nomeInstituicao(ctx.instituicaoId)}</span>
+          <span>{PAPEL_LABEL[ctx.papel]} · {nomeInst(ctx.instituicaoId)}</span>
           {ativos.length > 1 && (
             <label>Instituição ativa
               <select value={vinculoIdx} onChange={e => trocarVinculo(Number(e.target.value))}>
-                {ativos.map((v, i) => <option key={i} value={i}>{nomeInstituicao(v.instituicaoId)} ({PAPEL_LABEL[v.papel]})</option>)}
+                {ativos.map((v, i) => <option key={i} value={i}>{nomeInst(v.instituicaoId)} ({PAPEL_LABEL[v.papel]})</option>)}
               </select>
             </label>)}
           <button className="ghost" onClick={sair}>Sair</button>
         </div>
       </aside>
       <main className="main" key={`${ctx.instituicaoId}-${ctx.papel}`}>
+        {modoApi && <p role="status" className="aviso-topo">Login real pela API ativo. Os demais módulos ainda podem exibir dados de demonstração e não devem ser usados para gravar dados reais.</p>}
         <Routes>
           <Route path="/" element={ctx.papel === 'avaliador' ? <Navigate to="/avaliar" /> : ctx.papel === 'superadmin' ? <Plataforma /> : <Dashboard />} />
           <Route path="/projetos" element={<Projetos />} />

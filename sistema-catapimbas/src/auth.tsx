@@ -1,27 +1,62 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import * as api from './api'
-import type { Contexto, Papel, Usuario } from './types'
+import type { Contexto, Instituicao, Papel, Usuario } from './types'
+import { entrarPelaApi } from './servicos/auth-api'
 
-interface Auth { user: Usuario | null; ctx: Contexto | null; entrar(e: string, s: string): Promise<void>; sair(): void; trocarVinculo(i: number): void; vinculoIdx: number; aviso: string }
+interface Auth {
+  user: Usuario | null
+  ctx: Contexto | null
+  token: string | null
+  instituicoes: Instituicao[]
+  modoApi: boolean
+  entrar(e: string, s: string): Promise<void>
+  sair(): void
+  trocarVinculo(i: number): void
+  vinculoIdx: number
+  aviso: string
+}
 const C = createContext<Auth>(null!)
 export const useAuth = () => useContext(C)
+const modoApi = import.meta.env.VITE_AUTH_MODE === 'api'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Usuario | null>(null)
+  const [token, setToken] = useState<string | null>(null)
+  const [instituicoes, setInstituicoes] = useState<Instituicao[]>([])
   const [vinculoIdx, setIdx] = useState(0)
   const [aviso, setAviso] = useState('')
-  useEffect(() => { api.aoPerderAcesso(() => { setUser(null); setAviso('Seu acesso foi alterado por um administrador. Entre novamente.') }); return () => api.aoPerderAcesso(() => {}) }, [])
+  useEffect(() => {
+    api.aoPerderAcesso(() => {
+      setUser(null); setToken(null); setInstituicoes([])
+      setAviso('Seu acesso foi alterado por um administrador. Entre novamente.')
+    })
+    return () => api.aoPerderAcesso(() => {})
+  }, [])
+
   const value = useMemo<Auth>(() => {
     const ativos = user?.vinculos.filter(v => v.situacao === 'aprovado') ?? []
     const v = ativos[vinculoIdx] ?? ativos[0]
     return {
-      user, vinculoIdx, aviso,
+      user, token, instituicoes, modoApi, vinculoIdx, aviso,
       ctx: user && v ? { usuarioId: user.id, instituicaoId: v.instituicaoId, papel: v.papel } : null,
-      async entrar(e, s) { setAviso(''); setUser(await api.login(e, s)); setIdx(0) },
-      sair() { setAviso(''); setUser(null) },
+      async entrar(e, s) {
+        setAviso('')
+        if (modoApi) {
+          const resposta = await entrarPelaApi(e, s)
+          setUser(resposta.user)
+          setToken(resposta.session.accessToken)
+          setInstituicoes(resposta.instituicoes)
+        } else {
+          setUser(await api.login(e, s))
+          setToken(null)
+          setInstituicoes([])
+        }
+        setIdx(0)
+      },
+      sair() { setAviso(''); setUser(null); setToken(null); setInstituicoes([]); setIdx(0) },
       trocarVinculo: setIdx,
     }
-  }, [user, vinculoIdx, aviso])
+  }, [user, token, instituicoes, vinculoIdx, aviso])
   return <C.Provider value={value}>{children}</C.Provider>
 }
 export const MENU: { to: string; label: string; papeis: Papel[] }[] = [

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useAuth } from '../auth'
 
 export default function Login({ onCadastro, onRecuperar }: { onCadastro?(): void; onRecuperar?(): void } = {}) {
-  const { entrar, aviso } = useAuth()
+  const { entrar, aviso, modoApi } = useAuth()
   const [email, setEmail] = useState(''); const [senha, setSenha] = useState('')
   const [erro, setErro] = useState(''); const [load, setLoad] = useState(false)
   async function enviar(e: FormEvent) {
@@ -24,9 +24,9 @@ export default function Login({ onCadastro, onRecuperar }: { onCadastro?(): void
         {erro && <p role="alert" className="erro">{erro}</p>}
         <button disabled={load}>{load ? 'Entrando…' : 'Entrar'}</button>
         <div className="links-login"><button type="button" className="link" onClick={onCadastro}>Criar conta / solicitar ingresso</button><button type="button" className="link" onClick={onRecuperar}>Esqueci minha senha</button></div>
-        <p className="muted small">Ainda sem conta? Peça ingresso à sua instituição. A recuperação de senha enviará um link ao seu e-mail (a conectar à API).</p>
-        <details className="small"><summary>Contas de demonstração (senha demo1234)</summary>
-          admin@demo.dev · admin2@demo.dev (outra instituição) · andre@demo.dev (avaliador + orientador em 2 instituições) · coord@demo.dev · ricardo@demo.dev (orientador) · aluno@demo.dev · super@demo.dev</details>
+        <p className="muted small">{modoApi ? 'Autenticação Supabase via API ativada. A conta precisa estar vinculada ao perfil institucional.' : 'Ainda sem conta? Peça ingresso à sua instituição. A recuperação de senha enviará um link ao seu e-mail (a conectar à API).'}</p>
+        {!modoApi && <details className="small"><summary>Contas de demonstração (senha demo1234)</summary>
+          admin@demo.dev · admin2@demo.dev (outra instituição) · andre@demo.dev (avaliador + orientador em 2 instituições) · coord@demo.dev · ricardo@demo.dev (orientador) · aluno@demo.dev · super@demo.dev</details>}
       </form>
     </div>
   )

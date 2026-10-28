@@ -4,8 +4,9 @@ import { z } from "zod";
 import { getEnv } from "../config/env.js";
 import { authenticate } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
-import { assertDatabaseResult } from "../lib/http-error.js";
-import { getAdminSupabase, getPublicSupabase } from "../lib/supabase.js";
+import { HttpError } from "../lib/http-error.js";
+import { getPublicSupabase } from "../lib/supabase.js";
+import { carregarPerfilLegado } from "../repositories/legacy-users.js";
 
 export const authRouter = Router();
 
@@ -64,12 +65,16 @@ authRouter.post(
         },
       });
     }
+    if (!data.user || !data.session) {
+      throw new HttpError(401, "SESSION_UNAVAILABLE", "A autenticação não retornou uma sessão ativa");
+    }
+    const profile = await carregarPerfilLegado(
+      data.user.id,
+      data.user.email ?? req.body.email,
+      data.user.app_metadata?.system_role === "superadmin",
+    );
     return res.json({
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.user_metadata?.name,
-      },
+      ...profile,
       session: {
         accessToken: data.session.access_token,
         refreshToken: data.session.refresh_token,
@@ -94,19 +99,10 @@ authRouter.post(
 );
 
 authRouter.get("/me", authenticate, async (req, res) => {
-  const memberships = assertDatabaseResult(
-    await getAdminSupabase()
-      .from("institutional_memberships")
-      .select("institution_id,role,status,institutions(id,name,slug,status)")
-      .eq("user_id", req.auth!.user.id),
+  const profile = await carregarPerfilLegado(
+    req.auth!.user.id,
+    req.auth!.user.email ?? "",
+    req.auth!.systemRole === "superadmin",
   );
-  return res.json({
-    user: {
-      id: req.auth!.user.id,
-      email: req.auth!.user.email,
-      name: req.auth!.user.user_metadata?.name,
-      systemRole: req.auth!.systemRole,
-    },
-    memberships,
-  });
+  return res.json(profile);
 });
