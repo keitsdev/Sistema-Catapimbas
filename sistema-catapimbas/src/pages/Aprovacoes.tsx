@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
-import { decidirSolicitacao, listarSolicitacoes } from '../api'
+import { decidirSolicitacao, listarSolicitacoes } from '../servicos/acesso'
 import { useAuth } from '../auth'
 import { PAPEL_LABEL } from '../types'
 
 type S = Awaited<ReturnType<typeof listarSolicitacoes>>
 export default function Aprovacoes() {
-  const { ctx } = useAuth(); const [lista, setLista] = useState<S>([]); const [just, setJust] = useState<Record<number, string>>({}); const [erro, setErro] = useState('')
-  const carregar = () => listarSolicitacoes(ctx!).then(setLista)
-  useEffect(() => { carregar() }, [ctx])
-  const decidir = async (id: number, ok: boolean) => { try { setErro(''); await decidirSolicitacao(ctx!, id, ok, just[id]); carregar() } catch (e) { setErro((e as Error).message) } }
+  const { ctx, token } = useAuth(); const [lista, setLista] = useState<S>([]); const [just, setJust] = useState<Record<number, string>>({}); const [erro, setErro] = useState('')
+  const carregar = () => listarSolicitacoes(ctx!, token).then(setLista).catch(e => setErro((e as Error).message))
+  useEffect(() => { carregar() }, [ctx, token])
+  const decidir = async (id: number, ok: boolean) => { try { setErro(''); await decidirSolicitacao(ctx!, id, ok, just[id], undefined, token); await carregar() } catch (e) { setErro((e as Error).message) } }
   const pend = lista.filter(s => s.situacao === 'pendente')
   return (
     <>

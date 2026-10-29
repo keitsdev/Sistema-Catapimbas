@@ -17,7 +17,8 @@ interface Auth {
 }
 const C = createContext<Auth>(null!)
 export const useAuth = () => useContext(C)
-const modoApi = import.meta.env.VITE_AUTH_MODE === 'api'
+// Dados remotos precisam de um token Auth real; não combine CRUD de API com login mock.
+const modoApi = import.meta.env.VITE_AUTH_MODE === 'api' || import.meta.env.VITE_DATA_MODE === 'api'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Usuario | null>(null)

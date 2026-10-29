@@ -7,12 +7,15 @@ let admin: SupabaseClient | undefined;
 
 export function getAdminSupabase(): SupabaseClient {
   const env = getEnv();
-  if (!env.SUPABASE_SERVICE_ROLE_KEY) throw new HttpError(500, "CONFIG_ERROR", "SUPABASE_SERVICE_ROLE_KEY não configurada");
-  admin ??= createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, authOptions);
+  const secretKey = env.SUPABASE_SECRET_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secretKey) throw new HttpError(500, "CONFIG_ERROR", "SUPABASE_SECRET_KEY não configurada");
+  admin ??= createClient(env.SUPABASE_URL, secretKey, authOptions);
   return admin;
 }
 
 export function getPublicSupabase(): SupabaseClient {
   const env = getEnv();
-  return createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, authOptions);
+  const publishableKey = env.SUPABASE_PUBLISHABLE_KEY ?? env.SUPABASE_ANON_KEY;
+  if (!publishableKey) throw new HttpError(500, "CONFIG_ERROR", "SUPABASE_PUBLISHABLE_KEY não configurada");
+  return createClient(env.SUPABASE_URL, publishableKey, authOptions);
 }

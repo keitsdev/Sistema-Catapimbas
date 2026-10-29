@@ -1,7 +1,6 @@
 import { HttpError, assertDatabaseResult } from "../lib/http-error.js";
 import { getAdminSupabase } from "../lib/supabase.js";
 
-// Mantenha os nomes físicos do banco concentrados aqui. Confirme-os no Supabase antes de produção.
 export const LEGACY_SCHEMA = {
   users: "Usuario",
   memberships: "VinculoInstitucional",
@@ -19,6 +18,7 @@ interface VinculoRow {
   instituicao_id: number;
   papel: string;
   situacao: string;
+  justificativa?: string | null;
 }
 interface InstituicaoRow {
   id: number;
@@ -98,7 +98,7 @@ export async function carregarPerfilLegado(authUserId: string, authEmail: string
   const id = numberId(rawUser.id, "Usuario.id");
   const rawMemberships = assertDatabaseResult(
     await db.from(LEGACY_SCHEMA.memberships)
-      .select("instituicao_id,papel,situacao")
+      .select("instituicao_id,papel,situacao,justificativa")
       .eq("usuario_id", id),
   ) as unknown as VinculoRow[];
 
@@ -106,6 +106,7 @@ export async function carregarPerfilLegado(authUserId: string, authEmail: string
     instituicaoId: numberId(row.instituicao_id, "VinculoInstitucional.instituicao_id"),
     papel: mapRole(row.papel),
     situacao: mapSituation(row.situacao),
+    ...(row.justificativa ? { justificativa: row.justificativa } : {}),
   }));
 
   const superadmin = authIsSuperadmin;

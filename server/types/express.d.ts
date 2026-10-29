@@ -15,6 +15,14 @@ declare global {
         institution_id?: string;
         role?: string;
       };
+      legacyAccount?: {
+        userId: number;
+        authUserId: string;
+        email: string;
+        name: string;
+        institutionId: number;
+        role: "admin" | "coordenador" | "orientador" | "avaliador" | "aluno";
+      };
     }
   }
 }

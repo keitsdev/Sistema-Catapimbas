@@ -6,13 +6,20 @@ import { PAPEL_LABEL, type Papel } from '../types'
 export default function Cadastro({ onVoltar }: { onVoltar(): void }) {
   const { dados: insts } = useCarregar(listarInstituicoesPublicas, [])
   const [f, setF] = useState({ nome: '', email: '', senha: '', instituicaoId: 0, papel: 'aluno' as Papel })
-  const [enviado, setEnviado] = useState(false); const a = useAcao()
-  async function enviar(e: FormEvent) { e.preventDefault(); if (await a.executar(() => cadastrarUsuario({ ...f, instituicaoId: f.instituicaoId || insts?.[0]?.id || 0 }), '')) setEnviado(true) }
+  const [enviado, setEnviado] = useState(false); const [confirmarEmail, setConfirmarEmail] = useState(false); const a = useAcao()
+  async function enviar(e: FormEvent) {
+    e.preventDefault()
+    const ok = await a.executar(async () => {
+      const result = await cadastrarUsuario({ ...f, instituicaoId: f.instituicaoId || insts?.[0]?.id || 0 })
+      setConfirmarEmail(Boolean(result?.emailConfirmationRequired))
+    }, '')
+    if (ok) setEnviado(true)
+  }
   return (
     <div className="login">
       <section className="login-hero"><h1>Peça seu ingresso.</h1><p>Seu cadastro fica <b>pendente</b> até o administrador da instituição aprovar. Enquanto isso, nenhuma área protegida é liberada.</p></section>
       {enviado ? (
-        <div className="card login-form largo"><h2>Solicitação enviada</h2><p>O administrador da instituição vai analisar seu pedido. Você poderá entrar assim que ele for aprovado; se for recusado, o motivo aparecerá no login.</p><button onClick={onVoltar}>Voltar ao login</button></div>
+        <div className="card login-form largo"><h2>Solicitação enviada</h2><p>{confirmarEmail ? 'Confira sua caixa de entrada e confirme o e-mail. Depois, o administrador da instituição vai analisar seu pedido; o acesso só será liberado após a confirmação e aprovação.' : 'O administrador da instituição vai analisar seu pedido. Você poderá entrar assim que ele for aprovado; se for recusado, o motivo aparecerá no login.'}</p><button onClick={onVoltar}>Voltar ao login</button></div>
       ) : (
         <form className="card login-form largo" onSubmit={enviar}>
           <h2>Criar conta</h2>

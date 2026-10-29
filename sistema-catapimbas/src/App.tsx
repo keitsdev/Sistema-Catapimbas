@@ -53,7 +53,7 @@ export default function App() {
         </div>
       </aside>
       <main className="main" key={`${ctx.instituicaoId}-${ctx.papel}`}>
-        {modoApi && <p role="status" className="aviso-topo">Login real pela API ativo. Os demais módulos ainda podem exibir dados de demonstração e não devem ser usados para gravar dados reais.</p>}
+        {modoApi && <p role="status" className="aviso-topo">Modo conectado: login, cadastro, vínculos, aprovações e gestão de pessoas usam a API. Projetos, bancas, avaliações, instituições da plataforma e parte dos relatórios ainda podem usar dados de demonstração; não grave dados reais nesses módulos.</p>}
         <Routes>
           <Route path="/" element={ctx.papel === 'avaliador' ? <Navigate to="/avaliar" /> : ctx.papel === 'superadmin' ? <Plataforma /> : <Dashboard />} />
           <Route path="/projetos" element={<Projetos />} />

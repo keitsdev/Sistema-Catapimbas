@@ -62,14 +62,14 @@ Há ainda uma incompatibilidade de esquema documentada em `database-gap-report.m
 
    A compilação e os testes verificam código; não substituem um teste de gravação no projeto Supabase de desenvolvimento.
 
-## Próximo passo para tornar as alterações persistentes
+## Status atualizado: primeiro fluxo persistente de contas
 
-A equipe precisa escolher, com backup e validação, uma destas estratégias:
+Foi implementada a estratégia de compatibilidade com o esquema português para cadastro, vínculo, aprovação e gestão de pessoas, em uma rota isolada do backend. O trabalho não migra automaticamente as outras tabelas de domínio. Próximos passos:
 
-1. Migrar os dados para o esquema UUID em inglês esperado pela API, preservando o vínculo entre perfis e `auth.users`; ou
-2. Implementar uma camada de compatibilidade segura/adaptar a API para o esquema existente, com chaves estrangeiras, autorização multi-instituição, transações, auditoria e operações de convite.
+1. Revisar e aplicar as migrations aditivas de associação Auth e contas após backup, confirmação de colunas e tratamento de duplicidades.
+2. Fornecer/confirmar o DDL real das outras tabelas para adaptar projetos, equipes, bancas e avaliações sem presumir nomes/relacionamentos.
 
-Depois, é necessário substituir os serviços em memória do frontend por chamadas autenticadas à API. No caminho de preservar o esquema existente, o repositório converte IDs inteiros legados para os DTOs que o React já entende; ainda será necessário criar repositórios para as outras entidades e adaptar as rotas uma por vez.
+O frontend usa `/api/v1/legacy/*` quando `VITE_DATA_MODE=api`; `VITE_AUTH_MODE=api` também deve estar ativo para fornecer uma sessão válida. Os demais serviços em memória ainda precisam ser substituídos por chamadas autenticadas, uma entidade por vez.
 
 ## Login real inicial e repositório legado
 
@@ -77,6 +77,6 @@ O primeiro corte de integração usa `server/repositories/legacy-users.ts` como 
 
 1. Faça backup e aplique `supabase/migrations/20261028145900_link_auth_user_id.sql` apenas depois de confirmar que a tabela se chama exatamente `public."Usuario"` e preservando `Usuario.id`.
 2. Crie/vincule uma conta no Supabase Auth e associe manualmente seu UUID a uma única linha de `Usuario.auth_user_id`, após validar a identidade. Não copie `hash_senha` para Auth nem faça vínculo em massa apenas por e-mail.
-3. No frontend, copie `sistema-catapimbas/.env.example` para `sistema-catapimbas/.env.local`. `VITE_AUTH_MODE=api` seleciona o endpoint real; sem essa variável, o mock continua ativo.
+3. No frontend, copie `sistema-catapimbas/.env.example` para `sistema-catapimbas/.env.local`. Configure `VITE_AUTH_MODE=api` e `VITE_DATA_MODE=api`; o modo de dados força login real para não enviar operações sem bearer token.
 4. Inicie o backend e o frontend. No login real, o React chama `/api/v1/auth/login`, recebe o DTO e o token, e usa os metadados Auth para o papel de superadmin. A sessão fica apenas em memória nesta primeira versão; recarregar a página exige entrar novamente.
-5. Os demais módulos **continuam sendo mocks**. O aviso no painel explicita isso; não use as telas ainda não migradas para fazer alterações reais.
+5. Cadastro, solicitações de vínculo, aprovações, gestão de pessoas, alteração de senha, exportação e pedido de exclusão usam as rotas legadas. Os demais módulos **continuam sendo mocks ou usam contrato em inglês/UUID**; o aviso no painel explicita isso. Não grave dados reais por telas ainda não migradas.

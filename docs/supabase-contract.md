@@ -7,8 +7,8 @@ Este documento é a interface entre a API e o banco. Nomes de tabelas, colunas, 
 | Variável                    | Uso                                          |
 | --------------------------- | -------------------------------------------- |
 | `SUPABASE_URL`              | URL do projeto Supabase                      |
-| `SUPABASE_ANON_KEY`         | autenticação de usuários                     |
-| `SUPABASE_SERVICE_ROLE_KEY` | consultas do backend; nunca expor ao cliente |
+| `SUPABASE_PUBLISHABLE_KEY` (ou `SUPABASE_ANON_KEY` legado) | autenticação de usuários |
+| `SUPABASE_SECRET_KEY` (ou `SUPABASE_SERVICE_ROLE_KEY` legado) | consultas administrativas do backend; nunca expor ao cliente |
 | `SUPABASE_STORAGE_BUCKET`   | bucket para músicas do pódio                 |
 
 ## Identidade
